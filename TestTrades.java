@@ -22,7 +22,8 @@ public class TestTrades {
     Assert.assertEquals((Integer)15, resultingTrade.getProfit());
     System.out.println(resultingTrade);
 
-    List<Trade> optimalTrades = StockApp.optimalTradesRecursively(trades, 0, trades.length - 1, 1, null);
+    List<Trade> optimalTrades = StockApp.optimalTradesRecursively(trades, 0,
+        trades.length - 1, 1, null).getTradeList();
     Assert.assertEquals(1, optimalTrades.size());
     Assert.assertEquals(optimalTrades.get(0), resultingTrade);
   }
@@ -68,7 +69,8 @@ public class TestTrades {
 
     int[] stockPrices = new int[]{4,9,5,18,3,7,23,45,21,19,29,1,34,28,19,28,6,19,12,4,22};
     System.out.println("There are " + stockPrices.length + " items");
-    List<Trade> optimalTrades = StockApp.optimalTradesRecursively(stockPrices, 0, stockPrices.length - 1, 2, null);
+    List<Trade> optimalTrades = StockApp.optimalTradesRecursively(stockPrices, 0,
+        stockPrices.length - 1, 2, null).getTradeList();
     int totalProfit = 0;
     for (Trade t : optimalTrades) {
       System.out.println(t);
@@ -127,7 +129,8 @@ public class TestTrades {
   }
 
   private void runRecursiveTestCase(int[] trades, int numTrades, Integer expectedTotalProfit) {
-    List<Trade> optimalTrades = StockApp.optimalTradesRecursively(trades, 0, trades.length - 1, numTrades, null);
+    List<Trade> optimalTrades = StockApp.optimalTradesRecursively(trades, 0,
+        trades.length - 1, numTrades, null).getTradeList();
     int totalProfit = 0;
     for (Trade t : optimalTrades) {
       if (! (t instanceof NilTrade)) {

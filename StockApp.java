@@ -13,21 +13,50 @@ public class StockApp {
     return maxProfit(trades, 0, Math.max(trades.length - 1, 0), numTransactions);
   }
 
-  private class TradeList {
+  static class TradeList {
 
     List<Trade> tradeList;
+
+    TradeList() {
+
+      this.tradeList = new ArrayList<Trade>();
+    }
 
     TradeList(List<Trade> initialList) {
 
       this.tradeList = initialList;
+    }
+
+    public void add(Trade t) {
+      this.tradeList.add(t);
+    }
+
+    public void addAll(List<Trade> trades) {
+      for (Trade t: trades) {
+        this.tradeList.add(t);
+      }
+    }
+
+    public void addAll(TradeList trades) {
+      for (Trade t: trades.getTradeList()) {
+        this.tradeList.add(t);
+      }
+    }
+
+    public List<Trade> getTradeList() {
+      return this.tradeList;
+    }
+
+    public Trade get(int i) {
+      return this.tradeList.get(i);
     }
   }
 
   public static int maxProfit(final int[] stockPrices, int startIndex, int endingIndex, int numTransactions) {
 
     int profit = 0;
-    List<Trade> bestTrades = optimalTradesRecursively(stockPrices, startIndex, endingIndex, numTransactions, null);
-    for (Trade t: bestTrades) {
+    TradeList bestTrades = optimalTradesRecursively(stockPrices, startIndex, endingIndex, numTransactions, null);
+    for (Trade t : bestTrades.getTradeList()) {
       profit += t.getProfit();
     }
 
@@ -49,9 +78,9 @@ public class StockApp {
    * @return the list of the optional <numTransactions> trades that will produce the
    *         greatest total profit.
    */
-  public static List<Trade> optimalTradesRecursively(final int[] stockPrices, int startIndex,
+  public static TradeList optimalTradesRecursively(final int[] stockPrices, int startIndex,
                                                      int endingIndex, int numTransactions,
-                                                     Trade[][] bestTradeMatrix) {
+                                                     TradeList[][] bestTradeMatrix) {
     /**
      * 0 days -> 0 max transactions
      * 1 day  -> 1 max transaction (buy in the morning, sell in the evening)
@@ -65,7 +94,7 @@ public class StockApp {
     }
 
     if (startIndex == endingIndex) {
-      List<Trade> tradeList = new ArrayList<>();
+      TradeList tradeList = new TradeList();
       for (int i = 0; i < numTransactions; i++) {
         tradeList.add(new NilTrade());
       }
@@ -74,9 +103,9 @@ public class StockApp {
 
     final int MAX_INPUT_VALUE = stockPrices.length;
     final int ARRAY_SIZE_TO_ACCOMMODATE = MAX_INPUT_VALUE;
-    List<Trade> bestTrades = new ArrayList<>();
+    TradeList bestTrades = new TradeList();
     if (bestTradeMatrix == null) {
-      bestTradeMatrix = new Trade[ARRAY_SIZE_TO_ACCOMMODATE][ARRAY_SIZE_TO_ACCOMMODATE];
+      bestTradeMatrix = new TradeList[ARRAY_SIZE_TO_ACCOMMODATE][ARRAY_SIZE_TO_ACCOMMODATE];
     }
 
     if (numTransactions == 0) {
@@ -115,7 +144,7 @@ public class StockApp {
        *
        */
       List<Trade> bestFirstTrade = new ArrayList<>();
-      List<List<Trade>> bestRemainingTrades = new ArrayList<>();
+      List<TradeList> bestRemainingTrades = new ArrayList<>();
 
       /**
        * Very important to discuss tradeBoundary.
@@ -134,7 +163,7 @@ public class StockApp {
         Trade t = optimalTradesRecursively(stockPrices, startIndex, tradeBoundary, 1, null).get(0);
         bestFirstTrade.add(t);
 
-        List<Trade> tradeList;
+        TradeList tradeList;
         if (tradeBoundary <= endingIndex) {
 
           //TODO: Test the effects of the recursive call here
@@ -142,7 +171,7 @@ public class StockApp {
               numTransactions - 1, null);
         } else {
           // So if we're asked to go beyond the bounds of what is normal, just add an empty list.
-          tradeList = new ArrayList<>();
+          tradeList = new TradeList();
         }
         bestRemainingTrades.add(tradeList);
       }
@@ -157,7 +186,7 @@ public class StockApp {
   }
 
   private static void findBestTwoTrades(int startIndex, int endingIndex, int[] stockPrices,
-                                               Trade[][] bestTradeMatrix, List<Trade> bestTrades) {
+                                               TradeList[][] bestTradeMatrix, TradeList bestTrades) {
 
     List<Trade> bestFirstTradeGivenBoundary = new ArrayList<>();
     List<Trade> bestSecondTradeGivenBoundary = new ArrayList<>();
@@ -172,7 +201,7 @@ public class StockApp {
       // 1st trade
       if (bestTradeMatrix[0][newEndingIndex] != null) {
         System.out.println("Hit for 0," + newEndingIndex + "!");
-        optimalFirstTrade = bestTradeMatrix[0][newEndingIndex];
+        optimalFirstTrade = bestTradeMatrix[0][newEndingIndex].get(0);
 
       } else {
         System.out.println("Miss for 0," + newEndingIndex + "!");
@@ -182,13 +211,15 @@ public class StockApp {
             newEndingIndex, 1, bestTradeMatrix).get(0);
 
         // Memoize it
-        bestTradeMatrix[0][rangeBoundary] = optimalFirstTrade;
+        TradeList memoizedTradeList = new TradeList();
+        memoizedTradeList.add(optimalFirstTrade);
+        bestTradeMatrix[0][rangeBoundary] = memoizedTradeList;
       }
 
       //// 2nd trade
       if (bestTradeMatrix[rangeBoundary][stockPrices.length - 1] != null) {
         System.out.println("Hit for " + newEndingIndex + ", " + (stockPrices.length - 1) + "!");
-        optimalSecondTrade = bestTradeMatrix[newEndingIndex][stockPrices.length - 1];
+        optimalSecondTrade = bestTradeMatrix[newEndingIndex][stockPrices.length - 1].get(0);
 
       } else {
         System.out.println("Miss for " + newEndingIndex + ", " + (stockPrices.length - 1) + "!");
@@ -196,7 +227,9 @@ public class StockApp {
             stockPrices.length - 1, 1, bestTradeMatrix).get(0);
 
         // Memoize it
-        bestTradeMatrix[newEndingIndex][stockPrices.length - 1] = optimalSecondTrade;
+        TradeList memoizedTradeList = new TradeList();
+        memoizedTradeList.add(optimalSecondTrade);
+        bestTradeMatrix[newEndingIndex][stockPrices.length - 1] = memoizedTradeList;
       }
 
       bestFirstTradeGivenBoundary.add(optimalFirstTrade);
@@ -206,9 +239,9 @@ public class StockApp {
     // Now get the index (i.e. boundary day) at which sample_trades are
     // maximized, and return those sample_trades
 
-    List<List<Trade>> listOfLists = new ArrayList<>();
+    List<TradeList> listOfLists = new ArrayList<>();
     for (Trade t : bestSecondTradeGivenBoundary) {
-      List<Trade> list = new ArrayList<>();
+      TradeList list = new TradeList();
       list.add(t);
       listOfLists.add(list);
     }
@@ -248,7 +281,7 @@ public class StockApp {
    * @return the best single trade possible
    */
   public static Trade bestTradeInRangeIncreasingMemoized(int[] trades, int startIndex,
-                                                         int endingIndex, Trade[][] bestTrades) {
+                                                         int endingIndex, TradeList[][] bestTrades) {
     validateInputs(trades, startIndex, endingIndex);
 
     if (startIndex == endingIndex) {
@@ -258,7 +291,7 @@ public class StockApp {
     if (bestTrades[startIndex][endingIndex] != null) {
       System.out.println("Cache hit on " + startIndex + ", " + endingIndex + "! " +
           "Wo0t! We are not totally worthless afterall");
-      return bestTrades[startIndex][endingIndex];
+      return bestTrades[startIndex][endingIndex].get(0);
     }
 
     System.out.println("Call to bestTradeInRangeIncreasingMemoized from " +
@@ -289,7 +322,9 @@ public class StockApp {
         bestTrade = new Trade(dayOfLowestPrice, day, lowestPriceSeenSoFar, currentPrice);
         // MEMOIZATION -- yikes
         System.out.println("About to memoize " + startIndex + ", " + day);
-        bestTrades[startIndex][day] = bestTrade;
+        TradeList wrapper = new TradeList();
+        wrapper.add(bestTrade);
+        bestTrades[startIndex][day] = wrapper;
       }
 
       // If today was a low day, we should have that data available
@@ -525,7 +560,7 @@ public class StockApp {
    * @param l2 second list
    * @return int - maximum sum
    */
-  private static int getOptimalIndexForBoundary(List<Trade> l1, List<List<Trade>> l2) {
+  private static int getOptimalIndexForBoundary(List<Trade> l1, List<TradeList> l2) {
 
     if (l1.size() != l2.size()) {
       throw new IllegalArgumentException("lists vary in size!");
@@ -540,8 +575,8 @@ public class StockApp {
       array1[i] = l1.get(i).getProfit();
 
       int list2Sum = 0;
-      List innerList2List = l2.get(i);
-      for (Trade t : (List<Trade>)innerList2List) {
+      TradeList innerList2List = l2.get(i);
+      for (Trade t : innerList2List.getTradeList()) {
         list2Sum += t.getProfit();
       }
       array2[i] = list2Sum;
