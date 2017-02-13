@@ -80,7 +80,7 @@ public class StockApp {
    */
   public static TradeList optimalTradesRecursively(final int[] stockPrices, int startIndex,
                                                      int endingIndex, int numTransactions,
-                                                     TradeList[][] bestTradeMatrix) {
+                                                     TradeList[][][] bestTradeMatrix) {
     /**
      * 0 days -> 0 max transactions
      * 1 day  -> 1 max transaction (buy in the morning, sell in the evening)
@@ -104,8 +104,16 @@ public class StockApp {
     final int MAX_INPUT_VALUE = stockPrices.length;
     final int ARRAY_SIZE_TO_ACCOMMODATE = MAX_INPUT_VALUE;
     TradeList bestTrades = new TradeList();
+
+    // Memoization
+
+    // NOTE -- the index of numTransactions isn't 0-indexed
     if (bestTradeMatrix == null) {
-      bestTradeMatrix = new TradeList[ARRAY_SIZE_TO_ACCOMMODATE][ARRAY_SIZE_TO_ACCOMMODATE];
+      bestTradeMatrix = new TradeList[numTransactions+1][ARRAY_SIZE_TO_ACCOMMODATE][ARRAY_SIZE_TO_ACCOMMODATE];
+    } else if (bestTradeMatrix[numTransactions][startIndex][endingIndex]!=null) {
+      System.out.println("Hit for " + numTransactions +
+          " transactions between " + startIndex + " and " + endingIndex + "!!");
+        return bestTradeMatrix[numTransactions][startIndex][endingIndex];
     }
 
     if (numTransactions == 0) {
@@ -136,7 +144,7 @@ public class StockApp {
        *
        * Performance: O(n)
        */
-      findBestTwoTrades(startIndex, endingIndex, stockPrices,bestTradeMatrix, bestTrades);
+      findBestTwoTrades(startIndex, endingIndex, stockPrices, bestTradeMatrix, bestTrades);
 
     } else {
       /*
@@ -160,7 +168,11 @@ public class StockApp {
        */
       for (int tradeBoundary = startIndex; tradeBoundary < (endingIndex + 1); tradeBoundary++) {
 
-        Trade t = optimalTradesRecursively(stockPrices, startIndex, tradeBoundary, 1, null).get(0);
+        TradeList resultsFromSingleBestTrade = optimalTradesRecursively(stockPrices, startIndex, tradeBoundary, 1, bestTradeMatrix);
+        if (resultsFromSingleBestTrade.getTradeList().size()!=1) {
+          throw new IllegalStateException("Critical assumption violated!");
+        }
+        Trade t = resultsFromSingleBestTrade.get(0);
         bestFirstTrade.add(t);
 
         TradeList tradeList;
@@ -168,7 +180,7 @@ public class StockApp {
 
           //TODO: Test the effects of the recursive call here
           tradeList = optimalTradesRecursively(stockPrices, tradeBoundary, endingIndex,
-              numTransactions - 1, null);
+              numTransactions - 1, bestTradeMatrix);
         } else {
           // So if we're asked to go beyond the bounds of what is normal, just add an empty list.
           tradeList = new TradeList();
@@ -176,6 +188,8 @@ public class StockApp {
         bestRemainingTrades.add(tradeList);
       }
 
+      // I think that the remaining trades are not respecting the boundary.
+      // Indeed. Todo: Fix it.
       int bestIndex = getOptimalIndexForBoundary(bestFirstTrade, bestRemainingTrades);
       System.out.println("Best index is: " + bestIndex);
       bestTrades.add(bestFirstTrade.get(bestIndex));
@@ -186,7 +200,7 @@ public class StockApp {
   }
 
   private static void findBestTwoTrades(int startIndex, int endingIndex, int[] stockPrices,
-                                               TradeList[][] bestTradeMatrix, TradeList bestTrades) {
+                                               TradeList[][][] bestTradeMatrix, TradeList bestTrades) {
 
     List<Trade> bestFirstTradeGivenBoundary = new ArrayList<>();
     List<Trade> bestSecondTradeGivenBoundary = new ArrayList<>();
@@ -196,40 +210,39 @@ public class StockApp {
 
     for(int rangeBoundary = startIndex; rangeBoundary < (endingIndex + 1); rangeBoundary++) {
 
-      int newEndingIndex = rangeBoundary;
-
       // 1st trade
-      if (bestTradeMatrix[0][newEndingIndex] != null) {
-        System.out.println("Hit for 0," + newEndingIndex + "!");
-        optimalFirstTrade = bestTradeMatrix[0][newEndingIndex].get(0);
+      if (bestTradeMatrix[1][startIndex][rangeBoundary] != null) {
+        System.out.println("Hit for 0," + rangeBoundary + "!");
+        optimalFirstTrade = bestTradeMatrix[1][startIndex][rangeBoundary].get(0);
 
       } else {
-        System.out.println("Miss for 0," + newEndingIndex + "!");
+        //TODO: Annotate w/# of trades
+        System.out.println("Miss for 1 trade: 0," + rangeBoundary + "!");
         // This line might cause problems
 
         optimalFirstTrade = optimalTradesRecursively(stockPrices, startIndex,
-            newEndingIndex, 1, bestTradeMatrix).get(0);
+            rangeBoundary, 1, bestTradeMatrix).get(0);
 
         // Memoize it
         TradeList memoizedTradeList = new TradeList();
         memoizedTradeList.add(optimalFirstTrade);
-        bestTradeMatrix[0][rangeBoundary] = memoizedTradeList;
+        bestTradeMatrix[1][startIndex][rangeBoundary] = memoizedTradeList;
       }
 
       //// 2nd trade
-      if (bestTradeMatrix[rangeBoundary][stockPrices.length - 1] != null) {
-        System.out.println("Hit for " + newEndingIndex + ", " + (stockPrices.length - 1) + "!");
-        optimalSecondTrade = bestTradeMatrix[newEndingIndex][stockPrices.length - 1].get(0);
+      if (bestTradeMatrix[1][rangeBoundary][stockPrices.length - 1] != null) {
+        System.out.println("Hit for " + rangeBoundary + ", " + (stockPrices.length - 1) + "!");
+        optimalSecondTrade = bestTradeMatrix[1][rangeBoundary][stockPrices.length - 1].get(0);
 
       } else {
-        System.out.println("Miss for " + newEndingIndex + ", " + (stockPrices.length - 1) + "!");
-        optimalSecondTrade = optimalTradesRecursively(stockPrices, newEndingIndex,
+        System.out.println("Miss for " + rangeBoundary + ", " + (stockPrices.length - 1) + "!");
+        optimalSecondTrade = optimalTradesRecursively(stockPrices, rangeBoundary,
             stockPrices.length - 1, 1, bestTradeMatrix).get(0);
 
         // Memoize it
         TradeList memoizedTradeList = new TradeList();
         memoizedTradeList.add(optimalSecondTrade);
-        bestTradeMatrix[newEndingIndex][stockPrices.length - 1] = memoizedTradeList;
+        bestTradeMatrix[1][rangeBoundary][stockPrices.length - 1] = memoizedTradeList;
       }
 
       bestFirstTradeGivenBoundary.add(optimalFirstTrade);
@@ -249,6 +262,9 @@ public class StockApp {
     int bestIndex = getOptimalIndexForBoundary(bestFirstTradeGivenBoundary, listOfLists);
     bestTrades.add(bestFirstTradeGivenBoundary.get(bestIndex));
     bestTrades.add(bestSecondTradeGivenBoundary.get(bestIndex));
+
+    //Memoize the result
+    bestTradeMatrix[2][startIndex][endingIndex] = bestTrades;
   }
 
   // This is O(sample_trades)
@@ -281,17 +297,17 @@ public class StockApp {
    * @return the best single trade possible
    */
   public static Trade bestTradeInRangeIncreasingMemoized(int[] trades, int startIndex,
-                                                         int endingIndex, TradeList[][] bestTrades) {
+                                                         int endingIndex, TradeList[][][] bestTrades) {
     validateInputs(trades, startIndex, endingIndex);
 
     if (startIndex == endingIndex) {
       return new NilTrade();
     }
 
-    if (bestTrades[startIndex][endingIndex] != null) {
+    if (bestTrades[1][startIndex][endingIndex] != null) {
       System.out.println("Cache hit on " + startIndex + ", " + endingIndex + "! " +
           "Wo0t! We are not totally worthless afterall");
-      return bestTrades[startIndex][endingIndex].get(0);
+      return bestTrades[1][startIndex][endingIndex].get(0);
     }
 
     System.out.println("Call to bestTradeInRangeIncreasingMemoized from " +
@@ -324,7 +340,7 @@ public class StockApp {
         System.out.println("About to memoize " + startIndex + ", " + day);
         TradeList wrapper = new TradeList();
         wrapper.add(bestTrade);
-        bestTrades[startIndex][day] = wrapper;
+        bestTrades[1][startIndex][day] = wrapper;
       }
 
       // If today was a low day, we should have that data available
