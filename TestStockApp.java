@@ -17,7 +17,7 @@ public class TestStockApp {
     final Integer EXPECTED_HIGHEST_PRICE = 35;
     final Integer EXPECTED_PROFIT = EXPECTED_HIGHEST_PRICE - EXPECTED_LOWEST_PRICE;
 
-    Trade result = StockApp.bestTradeInRangeIncreasing(sample_trades, 0, sample_trades.length - 1);
+    Trade result = StockApp.bestTradeInRangeIncreasingMemoized(sample_trades, 0, sample_trades.length - 1);
 
     Assert.assertEquals(EXPECTED_PROFIT, result.getProfit());
     Assert.assertEquals(EXPECTED_LOWEST_PRICE_DAY, result.getBuyDay());
@@ -27,8 +27,8 @@ public class TestStockApp {
   @Test
   public void validateRangeDecreasingAndRangeIncreasingEqual() {
 
-    Trade result = StockApp.bestTradeInRangeIncreasing(sample_trades, 0, sample_trades.length - 1);
-    Trade result2 = StockApp.bestTradeInRangeDecreasing(sample_trades, 0, sample_trades.length - 1);
+    Trade result = StockApp.bestTradeInRangeIncreasingMemoized(sample_trades, 0, sample_trades.length - 1);
+    Trade result2 = StockApp.bestTradeInRangeDecreasingMemoized(sample_trades, 0, sample_trades.length - 1);
 
     Assert.assertEquals("Increasing and decreasing trades different", result, result2);
   }
@@ -43,7 +43,7 @@ public class TestStockApp {
     final Integer EXPECTED_SELL_PRICE = 75;
     final Integer EXPECTED_PROFIT = EXPECTED_SELL_PRICE - EXPECTED_BUY_PRICE;
 
-    Trade result = StockApp.bestTradeInRangeIncreasing(trades, 0, trades.length - 1);
+    Trade result = StockApp.bestTradeInRangeIncreasingMemoized(trades, 0, trades.length - 1);
 
     Assert.assertEquals(EXPECTED_PROFIT, result.getProfit());
     Assert.assertEquals(EXPECTED_BUY_PRICE_DAY, result.getBuyDay());
@@ -54,7 +54,6 @@ public class TestStockApp {
   public void testEmpty() {
 
     int EXPECTED_RESULT = 0;
-
     Assert.assertEquals(EXPECTED_RESULT, StockApp.maxProfit(new int[]{},0,0,2));
   }
 
@@ -62,16 +61,16 @@ public class TestStockApp {
   public void testMaxProfitInRangeIncreasing() {
 
     int[] trades = {5, 10, 15, 35, 5, 10};
-    Assert.assertEquals(30, StockApp.maxProfitInRangeIncreasing(trades, 0, trades.length - 1));
+    Assert.assertEquals(30, StockApp.maxProfit(trades, 1));
 
     trades = new int[]{5, 10};
-    Assert.assertEquals(5, StockApp.maxProfitInRangeIncreasing(trades, 0, trades.length - 1));
+    Assert.assertEquals(5, StockApp.maxProfit(trades, 1));
 
     trades = new int[]{5};
-    Assert.assertEquals(0, StockApp.maxProfitInRangeIncreasing(trades, 0, trades.length - 1));
+    Assert.assertEquals(0, StockApp.maxProfit(trades, 1));
 
     trades = new int[]{};
-    Assert.assertEquals(0, StockApp.maxProfitInRangeIncreasing(trades, 0, trades.length - 1));
+    Assert.assertEquals(0, StockApp.maxProfit(trades, 1));
   }
 
   @Test

@@ -12,12 +12,12 @@ public class TestTrades {
   public void testSingleTrade() {
 
     int[] trades = new int[]{4,5,6,19};
-    Trade resultingTrade = StockApp.bestTradeInRangeDecreasing(trades, 0, trades.length - 1);
+    Trade resultingTrade = StockApp.bestTradeInRangeDecreasingMemoized(trades, 0, trades.length - 1);
     Assert.assertTrue(! (resultingTrade instanceof NilTrade));
     Assert.assertEquals((Integer)15, resultingTrade.getProfit());
     System.out.println(resultingTrade);
 
-    resultingTrade = StockApp.bestTradeInRangeIncreasing(trades, 0, trades.length - 1);
+    resultingTrade = StockApp.bestTradeInRangeIncreasingMemoized(trades, 0, trades.length - 1);
     Assert.assertTrue(! (resultingTrade instanceof NilTrade));
     Assert.assertEquals((Integer)15, resultingTrade.getProfit());
     System.out.println(resultingTrade);
@@ -85,10 +85,10 @@ public class TestTrades {
 
     int[] trades = new int[]{4,5,6,19};
 
-    Trade resultingTrade = StockApp.bestTradeInRangeDecreasing(trades, 2,2);
+    Trade resultingTrade = StockApp.bestTradeInRangeDecreasingMemoized(trades, 2,2, null);
     Assert.assertTrue(resultingTrade instanceof NilTrade);
 
-    resultingTrade = StockApp.bestTradeInRangeIncreasing(trades, 2, 2);
+    resultingTrade = StockApp.bestTradeInRangeIncreasingMemoized(trades, 2, 2, null);
     Assert.assertTrue(resultingTrade instanceof NilTrade);
   }
 

@@ -6,35 +6,25 @@ import java.util.List;
  */
 public class StockApp {
 
-  public static int totalCalls = 0;
 
-  public static int maxProfit(final int[] trades, int numTransactions) {
+  private static int totalUnitsOfWork = 0;
+  public static int getTotalUnitsOfWork() {
+    return totalUnitsOfWork;
+  }
 
-    return maxProfit(trades, 0, Math.max(trades.length - 1, 0), numTransactions);
+  public static void resetTotalUnitsOfWork() {
+    StockApp.totalUnitsOfWork = 0;
   }
 
   static class TradeList {
 
     List<Trade> tradeList;
-
     TradeList() {
-
       this.tradeList = new ArrayList<Trade>();
-    }
-
-    TradeList(List<Trade> initialList) {
-
-      this.tradeList = initialList;
     }
 
     public void add(Trade t) {
       this.tradeList.add(t);
-    }
-
-    public void addAll(List<Trade> trades) {
-      for (Trade t: trades) {
-        this.tradeList.add(t);
-      }
     }
 
     public void addAll(TradeList trades) {
@@ -50,6 +40,20 @@ public class StockApp {
     public Trade get(int i) {
       return this.tradeList.get(i);
     }
+
+    public int getTotalProfit() {
+      int profit = 0;
+      for (Trade t: this.tradeList) {
+        profit += t.getProfit();
+      }
+
+      return profit;
+    }
+  }
+
+
+  public static int maxProfit(final int[] trades, int numTransactions) {
+    return maxProfit(trades, 0, Math.max(trades.length - 1, 0), numTransactions);
   }
 
   public static int maxProfit(final int[] stockPrices, int startIndex, int endingIndex, int numTransactions) {
@@ -72,9 +76,9 @@ public class StockApp {
    * @param numTransactions the number of trades (buy->sell) that we are trying to
    *                        optimize for
    * @param bestTradeMatrix a memoization table that describes the best possible trade in
-   *                        a given range. bestTradeMatrix[i][j] represents the best single
-   *                        trade that can be made when a user can purchase a security on
-   *                        day i and sell it up to day j.
+   *                        a given range. bestTradeMatrix[i][j][k] represents the i trades
+   *                        that can be made when a user can trade in the window represented
+   *                        by day j and day k.
    * @return the list of the optional <numTransactions> trades that will produce the
    *         greatest total profit.
    */
@@ -101,12 +105,10 @@ public class StockApp {
       return tradeList;
     }
 
-    final int MAX_INPUT_VALUE = stockPrices.length;
-    final int ARRAY_SIZE_TO_ACCOMMODATE = MAX_INPUT_VALUE;
+    final int ARRAY_SIZE_TO_ACCOMMODATE = stockPrices.length;
     TradeList bestTrades = new TradeList();
 
     // Memoization
-
     // NOTE -- the index of numTransactions isn't 0-indexed
     if (bestTradeMatrix == null) {
       bestTradeMatrix = new TradeList[numTransactions+1][ARRAY_SIZE_TO_ACCOMMODATE][ARRAY_SIZE_TO_ACCOMMODATE];
@@ -149,7 +151,7 @@ public class StockApp {
     } else {
       /*
        * This is the general case (trades >=3 ), which uses the two base cases
-       *
+       * Performance is O(n) * O(f(numTransactions - 1))
        */
       List<Trade> bestFirstTrade = new ArrayList<>();
       List<TradeList> bestRemainingTrades = new ArrayList<>();
@@ -196,11 +198,14 @@ public class StockApp {
       bestTrades.addAll(bestRemainingTrades.get(bestIndex));
     }
 
+    if (bestTrades.getTradeList().size() != numTransactions) {
+      throw new IllegalStateException("Expected " + numTransactions + " but returning " + bestTrades.getTradeList().size());
+    }
     return bestTrades;
   }
 
   private static void findBestTwoTrades(int startIndex, int endingIndex, int[] stockPrices,
-                                               TradeList[][][] bestTradeMatrix, TradeList bestTrades) {
+                                        TradeList[][][] bestTradeMatrix, TradeList bestTrades) {
 
     List<Trade> bestFirstTradeGivenBoundary = new ArrayList<>();
     List<Trade> bestSecondTradeGivenBoundary = new ArrayList<>();
@@ -208,16 +213,19 @@ public class StockApp {
     Trade optimalFirstTrade;
     Trade optimalSecondTrade;
 
+
+    StockApp.totalUnitsOfWork += (endingIndex - startIndex);
+
     for(int rangeBoundary = startIndex; rangeBoundary < (endingIndex + 1); rangeBoundary++) {
 
       // 1st trade
       if (bestTradeMatrix[1][startIndex][rangeBoundary] != null) {
-        System.out.println("Hit for 0," + rangeBoundary + "!");
+        System.out.println("Hit for 1 trade from " + startIndex + "," + rangeBoundary + "!");
         optimalFirstTrade = bestTradeMatrix[1][startIndex][rangeBoundary].get(0);
 
       } else {
         //TODO: Annotate w/# of trades
-        System.out.println("Miss for 1 trade: 0," + rangeBoundary + "!");
+        System.out.println("[Miss] for 1 trade from " + startIndex + "," + rangeBoundary + "!");
         // This line might cause problems
 
         optimalFirstTrade = optimalTradesRecursively(stockPrices, startIndex,
@@ -231,11 +239,11 @@ public class StockApp {
 
       //// 2nd trade
       if (bestTradeMatrix[1][rangeBoundary][stockPrices.length - 1] != null) {
-        System.out.println("Hit for " + rangeBoundary + ", " + (stockPrices.length - 1) + "!");
+        System.out.println("Hit for 1 trade from " + rangeBoundary + "," + (stockPrices.length - 1) + "!");
         optimalSecondTrade = bestTradeMatrix[1][rangeBoundary][stockPrices.length - 1].get(0);
 
       } else {
-        System.out.println("Miss for " + rangeBoundary + ", " + (stockPrices.length - 1) + "!");
+        System.out.println("[Miss] for 1 trade from " + rangeBoundary + "," + (stockPrices.length - 1) + "!");
         optimalSecondTrade = optimalTradesRecursively(stockPrices, rangeBoundary,
             stockPrices.length - 1, 1, bestTradeMatrix).get(0);
 
@@ -272,7 +280,9 @@ public class StockApp {
 
     int lowestPriceSeenSoFar = Integer.MAX_VALUE-1; //initialize to highest possible value
     int maximumProfitPossibleSoFar = 0;
-    // TODO: Add some logic to allow tracing of which day causes it to be updated
+
+    StockApp.totalUnitsOfWork += (endingIndex - startIndex);
+
     for (int day = startIndex; day<(endingIndex + 1); day++) {
       int result = updateMostMoney(maximumProfitPossibleSoFar, lowestPriceSeenSoFar, trades[day]);
       maximumProfitPossibleSoFar = Math.max(result, maximumProfitPossibleSoFar);
@@ -299,20 +309,25 @@ public class StockApp {
   public static Trade bestTradeInRangeIncreasingMemoized(int[] trades, int startIndex,
                                                          int endingIndex, TradeList[][][] bestTrades) {
     validateInputs(trades, startIndex, endingIndex);
-
+    int ARRAY_SIZE_TO_ACCOMMODATE = trades.length;
+    int numTransactions = 1;
+    if (bestTrades == null) {
+      bestTrades = new TradeList[numTransactions+1][ARRAY_SIZE_TO_ACCOMMODATE][ARRAY_SIZE_TO_ACCOMMODATE];
+    }
     if (startIndex == endingIndex) {
       return new NilTrade();
     }
 
-    if (bestTrades[1][startIndex][endingIndex] != null) {
-      System.out.println("Cache hit on " + startIndex + ", " + endingIndex + "! " +
-          "Wo0t! We are not totally worthless afterall");
+    if (bestTrades != null && bestTrades[1][startIndex][endingIndex] != null) {
+
+      StockApp.totalUnitsOfWork += 1;
+      System.out.println("Hit for 1 trade from " + startIndex + "," + endingIndex + "!");
       return bestTrades[1][startIndex][endingIndex].get(0);
     }
 
     System.out.println("Call to bestTradeInRangeIncreasingMemoized from " +
         startIndex + " to " + endingIndex + ", inclusive. This costs O(n). " +
-        "Call increased from " + totalCalls + " to " + ++totalCalls);
+        "Call increased from " + totalUnitsOfWork + " to " + ++totalUnitsOfWork);
 
     // Initializations
     int lowestPriceSeenSoFar = trades[startIndex]; //initialize to highest possible value
@@ -324,14 +339,11 @@ public class StockApp {
 
     // Super-important: The loop's last iteration where day=endingIndex.
     // This is to produce the inclusive nature of the component.
+
+    StockApp.totalUnitsOfWork += 2 * (endingIndex - startIndex);
+
     for (int day = startIndex; day <= (endingIndex); day++) {
 
-      // Super-hacky that we need this, as it indicates a semantic mismatch elsehwere.
-      // Still, this'll get us out of trouble.
-      if ( day >= trades.length) {
-        System.out.println("WARNING: tried to access out of range!!");
-        continue;
-      }
       int currentPrice = trades[day];
       if (currentPrice - lowestPriceSeenSoFar > bestTrade.getProfit()) {
 
@@ -353,14 +365,36 @@ public class StockApp {
     return bestTrade;
   }
 
-  // This is O(sample_trades)
-  public static Trade bestTradeInRangeIncreasing(int[] trades, int startIndex, int endingIndex) {
+  public static Trade bestTradeInRangeIncreasingMemoized(int[] trades, int startIndex, int endingIndex) {
+    return bestTradeInRangeIncreasingMemoized(trades, startIndex, endingIndex, null);
+  }
+
+  public static Trade bestTradeInRangeDecreasingMemoized(int[] trades, int startIndex, int endingIndex) {
+    return bestTradeInRangeDecreasingMemoized(trades, startIndex, endingIndex, null);
+  }
+
+  public static Trade bestTradeInRangeDecreasingMemoized(int[] trades, int startIndex,
+                                                 int endingIndex, TradeList[][][] bestTrades ) {
 
     validateInputs(trades, startIndex, endingIndex);
+    int ARRAY_SIZE_TO_ACCOMMODATE = trades.length;
+    int numTransactions = 1;
+    if (bestTrades == null) {
+      bestTrades = new TradeList[numTransactions+1][ARRAY_SIZE_TO_ACCOMMODATE][ARRAY_SIZE_TO_ACCOMMODATE];
+    }
+    if (startIndex == endingIndex) {
+      return new NilTrade();
+    }
 
-    System.out.println("Call to bestTradeInRangeIncreasing from " +
+    if (bestTrades != null && bestTrades[1][startIndex][endingIndex] != null) {
+
+      StockApp.totalUnitsOfWork += 1;
+      System.out.println("Hit for 1 trade from " + startIndex + "," + endingIndex + "!");
+      return bestTrades[1][startIndex][endingIndex].get(0);
+    }
+    System.out.println("Call to bestTradeInRangeDecreasing from " +
         startIndex + " to " + endingIndex + ". This costs O(n). " +
-        "Call increased from " + totalCalls + " to " + ++totalCalls);
+        "Call increased from " + totalUnitsOfWork + " to " + ++totalUnitsOfWork);
 
     if (startIndex == endingIndex) {
       return new NilTrade();
@@ -368,55 +402,16 @@ public class StockApp {
 
     // Initializations
     int lowestPriceSeenSoFar = trades[startIndex]; //initialize to highest possible value
+    int highestPriceSeenSoFar = trades[startIndex]; //initialize to highest possible value
     int dayOfLowestPrice = startIndex;
     int dayOfHighestPrice = startIndex;
 
     Trade bestTrade = new Trade(dayOfLowestPrice, dayOfHighestPrice,
         trades[dayOfLowestPrice], trades[dayOfHighestPrice]);
 
-    for (int day = startIndex; day < (endingIndex + 1); day++) {
-      // Opportunity for memoization
-      int currentPrice = trades[day];
-      if (currentPrice - lowestPriceSeenSoFar > bestTrade.getProfit()) {
+    StockApp.totalUnitsOfWork += (endingIndex - startIndex);
 
-        bestTrade = new Trade(dayOfLowestPrice, day, lowestPriceSeenSoFar, currentPrice);
-      } else {
-
-        // Memorize here. The current best trade is what it already is.
-      }
-
-      // If today was a low day, we should have that data available
-      if (trades[day] < lowestPriceSeenSoFar) {
-        lowestPriceSeenSoFar = trades[day];
-        dayOfLowestPrice = day;
-      }
-    }
-
-    return bestTrade;
-  }
-
-  public static Trade bestTradeInRangeDecreasing(int[] trades, int START_INDEX, int ENDING_INDEX) {
-
-    validateInputs(trades, START_INDEX, ENDING_INDEX);
-
-    System.out.println("Call to bestTradeInRangeDecreasing from " +
-        START_INDEX + " to " + ENDING_INDEX + ". This costs O(n). " +
-        "Call increased from " + totalCalls + " to " + ++totalCalls);
-
-    if (START_INDEX == ENDING_INDEX) {
-      return new NilTrade();
-    }
-
-    // Initializations
-    int lowestPriceSeenSoFar = trades[START_INDEX]; //initialize to highest possible value
-    int highestPriceSeenSoFar = trades[START_INDEX]; //initialize to highest possible value
-    int dayOfLowestPrice = START_INDEX;
-    int dayOfHighestPrice = START_INDEX;
-
-    Trade bestTrade = new Trade(dayOfLowestPrice, dayOfHighestPrice,
-        trades[dayOfLowestPrice], trades[dayOfHighestPrice]);
-
-    for (int startingDay = ENDING_INDEX; startingDay >= START_INDEX; startingDay--) {
+    for (int startingDay = endingIndex; startingDay >= startIndex; startingDay--) {
       int currentPrice = trades[startingDay];
       if (highestPriceSeenSoFar - currentPrice > bestTrade.getProfit()) {
 
@@ -438,12 +433,13 @@ public class StockApp {
     return bestTrade;
   }
 
-  // This is O(sample_trades)
+  // This is O(n)
   public static void maxProfitEachDayInRangeDecreasing(int[] trades, int startIndex, int endingIndex, int[] populatedProfits) {
+
+    StockApp.totalUnitsOfWork += (endingIndex - startIndex);
 
     int highestPriceSeenSoFar = -1; //initialize to highest possible value
     int maximumProfitPossibleSoFar = 0;
-    // TODO: Add some logic to allow tracing of which day causes it to be updated
     for (int startingDay = endingIndex; startingDay>=startIndex; startingDay--) {
       int result = updateMostMoneyDesc(maximumProfitPossibleSoFar, highestPriceSeenSoFar, trades[startingDay]);
       if (result > maximumProfitPossibleSoFar) {
@@ -457,28 +453,18 @@ public class StockApp {
     }
   }
 
-  // This is O(sample_trades). This will discard the values it finds
+  // This is O(n). This will discard the values it finds
   public static int maxProfitInRangeIncreasing(int[] trades, int startIndex, int endingIndex) {
-
-    validateInputs(trades, startIndex, endingIndex);
-
-    if (trades.length == 0) {
-      return 0;
-    }
-
-    int maxSeen = -1;
-    int[] output = new int[trades.length];
-    maxProfitEachDayInRangeIncreasing(trades, startIndex, endingIndex, output);
-    for (int max : output) {
-      maxSeen = Math.max(max, maxSeen);
-    }
-
-    return maxSeen;
+    return maxProfitInRange(trades, true, startIndex, endingIndex);
   }
 
-  // This is O(sample_trades). This will discard the values it finds
+  // This is O(n). This will discard the values it finds
   public static int maxProfitInRangeDecreasing(int[] trades, int startIndex, int endingIndex) {
+    return maxProfitInRange(trades, false, startIndex, endingIndex);
+  }
 
+  // O(n)
+  private static int maxProfitInRange(int[] trades, boolean increasing, int startIndex, int endingIndex) {
     validateInputs(trades, startIndex, endingIndex);
 
     if (trades.length == 0 || startIndex == endingIndex) {
@@ -487,7 +473,15 @@ public class StockApp {
 
     int maxSeen = -1;
     int[] output = new int[trades.length];
-    maxProfitEachDayInRangeDecreasing(trades, startIndex, endingIndex, output);
+
+    // These are O(n)
+    if (increasing) {
+      maxProfitEachDayInRangeIncreasing(trades, startIndex, endingIndex, output);
+    } else {
+      maxProfitEachDayInRangeDecreasing(trades, startIndex, endingIndex, output);
+    }
+
+    // This is O(n)
     for (int max : output) {
       maxSeen = Math.max(max, maxSeen);
     }
@@ -504,7 +498,6 @@ public class StockApp {
     return maxSeenSoFar;
   }
 
-
   // The kernel of process. We have the 3 pieces of state we need. This is O(1)
   private static int updateMostMoneyDesc(int maxSeenSoFar, int highestPriceSeenSoFar, int currentPrice) {
 
@@ -514,7 +507,7 @@ public class StockApp {
     return maxSeenSoFar;
   }
 
-  public static void validateInputs(int[] trades, int startIndex, int endingIndex) {
+  static void validateInputs(int[] trades, int startIndex, int endingIndex) {
 
     // Validation edge cases
     if (trades.length == 0 && startIndex == 0) {
@@ -547,35 +540,6 @@ public class StockApp {
    * @param l2 second list
    * @return int - maximum sum
    */
-  /**
-  private static int getOptimalIndexForBoundary(List<Trade> l1, List<Trade> l2) {
-
-    if (l1.size() != l2.size()) {
-      throw new IllegalArgumentException("l1 and l2 have different sizes!");
-    }
-
-    // Routine conversion from sample_trades to profits
-    int[] array1 = new int[l1.size()];
-    int[] array2 = new int[l2.size()];
-
-    for(int i = 0; i<l1.size(); i++) {
-
-      array1[i] = l1.get(i).getProfit();
-      array2[i] = l2.get(i).getProfit();
-    }
-
-    return getIndexOfMaxTwoArrayAtIndex(array1, array2);
-  }
-   **/
-
-
-  /**
-   * O(n) algorithm for getting the index at which the sum of the item from the first list
-   * with that of the second list produces the maximum value.
-   * @param l1 first list
-   * @param l2 second list
-   * @return int - maximum sum
-   */
   private static int getOptimalIndexForBoundary(List<Trade> l1, List<TradeList> l2) {
 
     if (l1.size() != l2.size()) {
@@ -587,21 +551,26 @@ public class StockApp {
     int[] array2 = new int[l2.size()];
 
     for(int i = 0; i<l1.size(); i++) {
-
       array1[i] = l1.get(i).getProfit();
-
-      int list2Sum = 0;
       TradeList innerList2List = l2.get(i);
-      for (Trade t : innerList2List.getTradeList()) {
-        list2Sum += t.getProfit();
-      }
-      array2[i] = list2Sum;
+      array2[i] = innerList2List.getTotalProfit();
     }
 
     return getIndexOfMaxTwoArrayAtIndex(array1, array2);
   }
 
+  /**
+   * O(n) algorithm for finding the index at which the sum of
+   * the values in array1 and array2 are optimal
+   * @param array1 The first array of values
+   * @param array2 The second array of values
+   * @return The optimal index
+   */
   private static int getIndexOfMaxTwoArrayAtIndex(int[] array1, int[] array2) {
+
+    // O(n) computation
+    totalUnitsOfWork += array1.length;
+
     int maxProfitSum = 0;
     int bestI = 0;
     for (int i=0; i < array1.length-1; i++) {
@@ -613,21 +582,6 @@ public class StockApp {
       }
     }
 
-    //System.out.println("Max profit sum is " + maxProfitSum);
     return bestI;
-  }
-
-  private static int getMaxTwoArrayAtIndex(int[] array1, int[] array2) {
-    int maxProfitSum = 0;
-    for (int i=0; i<array1.length-1; i++) {
-
-      int potentialProfitSum = array1[i] + array2[i+1];
-      if (potentialProfitSum > maxProfitSum) {
-        maxProfitSum = potentialProfitSum;
-      }
-    }
-
-    //System.out.println("Max profit sum is " + maxProfitSum);
-    return maxProfitSum;
   }
 }
