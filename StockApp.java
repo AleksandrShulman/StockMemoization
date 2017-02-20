@@ -169,7 +169,8 @@ public class StockApp {
        */
       for (int tradeBoundary = startIndex; tradeBoundary < (endingIndex + 1); tradeBoundary++) {
 
-        TradeList resultsFromSingleBestTrade = optimalTradesRecursively(stockPrices, startIndex, tradeBoundary, 1, bestTradeMatrix);
+        TradeList resultsFromSingleBestTrade = optimalTradesRecursively(stockPrices,
+            startIndex, tradeBoundary, 1, bestTradeMatrix);
         if (resultsFromSingleBestTrade.getTradeList().size()!=1) {
           throw new IllegalStateException("Critical assumption violated!");
         }
@@ -178,8 +179,6 @@ public class StockApp {
 
         TradeList tradeList;
         if (tradeBoundary <= endingIndex) {
-
-          //TODO: Test the effects of the recursive call here
           tradeList = optimalTradesRecursively(stockPrices, tradeBoundary, endingIndex,
               numTransactions - 1, bestTradeMatrix);
         } else {
@@ -189,8 +188,6 @@ public class StockApp {
         bestRemainingTrades.add(tradeList);
       }
 
-      // I think that the remaining trades are not respecting the boundary.
-      // Indeed. Todo: Fix it.
       int bestIndex = getOptimalIndexForBoundary(bestFirstTrade, bestRemainingTrades);
       System.out.println("Best index is: " + bestIndex);
       bestTrades.add(bestFirstTrade.get(bestIndex));
@@ -222,10 +219,7 @@ public class StockApp {
         optimalFirstTrade = bestTradeMatrix[1][startIndex][rangeBoundary].get(0);
 
       } else {
-        //TODO: Annotate w/# of trades
         System.out.println("[Miss] for 1 trade from " + startIndex + "," + rangeBoundary + "!");
-        // This line might cause problems
-
         optimalFirstTrade = optimalTradesRecursively(stockPrices, startIndex,
             rangeBoundary, 1, bestTradeMatrix).get(0);
 
@@ -273,24 +267,6 @@ public class StockApp {
     bestTradeMatrix[2][startIndex][endingIndex] = bestTrades;
   }
 
-  // This is O(n)
-  public static void maxProfitEachDayInRangeIncreasing(int[] trades, int startIndex, int endingIndex, int[] populatedProfilts) {
-
-    int lowestPriceSeenSoFar = Integer.MAX_VALUE-1; //initialize to highest possible value
-    int maximumProfitPossibleSoFar = 0;
-
-    StockApp.totalUnitsOfWork += (endingIndex - startIndex);
-
-    for (int day = startIndex; day<(endingIndex + 1); day++) {
-      int result = updateMostMoney(maximumProfitPossibleSoFar, lowestPriceSeenSoFar, trades[day]);
-      maximumProfitPossibleSoFar = Math.max(result, maximumProfitPossibleSoFar);
-      populatedProfilts[day] = maximumProfitPossibleSoFar;
-      if (trades[day] < lowestPriceSeenSoFar) {
-        lowestPriceSeenSoFar = trades[day];
-      }
-    }
-  }
-
   /**
    * Given a range and a set of memoized trades, it will find the best single
    * trade to make. This is the kernel of the application.
@@ -335,18 +311,14 @@ public class StockApp {
     Trade bestTrade = new Trade(dayOfLowestPrice, dayOfHighestPrice,
         trades[dayOfLowestPrice], trades[dayOfHighestPrice]);
 
-    // Super-important: The loop's last iteration where day=endingIndex.
-    // This is to produce the inclusive nature of the component.
-
     StockApp.totalUnitsOfWork += 2 * (endingIndex - startIndex);
 
     for (int day = startIndex; day <= (endingIndex); day++) {
-
       int currentPrice = trades[day];
       if (currentPrice - lowestPriceSeenSoFar > bestTrade.getProfit()) {
 
         bestTrade = new Trade(dayOfLowestPrice, day, lowestPriceSeenSoFar, currentPrice);
-        // MEMOIZATION -- yikes
+        // MEMOIZATION
         System.out.println("About to memoize " + startIndex + ", " + day);
         TradeList wrapper = new TradeList();
         wrapper.add(bestTrade);
@@ -385,7 +357,6 @@ public class StockApp {
     }
 
     // Initializations
-    int lowestPriceSeenSoFar = trades[endingIndex]; //initialize to highest possible value
     int highestPriceSeenSoFar = trades[endingIndex]; //initialize to highest possible value
     int dayOfLowestPrice = endingIndex;
     int dayOfHighestPrice = endingIndex;
@@ -429,16 +400,11 @@ public class StockApp {
     return maxSeenSoFar;
   }
 
-  // The kernel of process. We have the 3 pieces of state we need. This is O(1)
-  private static int updateMostMoneyDesc(int maxSeenSoFar, int highestPriceSeenSoFar, int currentPrice) {
-
-    if (highestPriceSeenSoFar - currentPrice > maxSeenSoFar) {
-      return highestPriceSeenSoFar - currentPrice;
-    }
-    return maxSeenSoFar;
-  }
-
   static void validateInputs(int[] trades, int startIndex, int endingIndex) {
+
+    if (trades == null) {
+      throw new IllegalStateException("trade data cannot be null");
+    }
 
     // Validation edge cases
     if (trades.length == 0 && startIndex == 0) {
@@ -447,10 +413,6 @@ public class StockApp {
 
     if (trades.length == 0 && endingIndex == 0) {
       return;
-    }
-
-    if (trades == null) {
-      throw new IllegalStateException("trade data cannot be null");
     }
 
     if (endingIndex >= trades.length) {

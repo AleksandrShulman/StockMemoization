@@ -38,7 +38,7 @@ public class TestScalability {
     int y1 = doubleUnitsOfWork;
 
     // We can probably break this out into its own function to test
-    float slope = (y1 - y0) / (x1 - x0);
+    float slope = ((float)y1 - (float)y0) / ((float)x1 - (float)x0);
     int constant = Math.round(y0 - (x0*slope));
 
     // If we double the # of items again, it should follow the formula

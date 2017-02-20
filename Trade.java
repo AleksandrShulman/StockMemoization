@@ -30,11 +30,6 @@ public class Trade {
     this.profit = this.sellPrice - this.buyPrice;
   }
 
-  public Integer getProfit() {
-
-    return this.profit;
-  }
-
   @Override
   public boolean equals(Object a) {
 
@@ -42,28 +37,41 @@ public class Trade {
       return false;
     }
 
-    if (this.getBuyDay() != ((Trade) a).getBuyDay()) {
+    if (!this.buyDay.equals(((Trade) a).getBuyDay())) {
       return false;
     }
 
-    if (this.getSellDay() != ((Trade) a).getSellDay()) {
+    if (!this.sellDay.equals(((Trade) a).getSellDay())) {
       return false;
     }
 
-    if (this.profit != ((Trade) a).profit) {
+    if (!this.profit.equals(((Trade) a).profit)) {
       return false;
     }
 
-    if (this.buyPrice != ((Trade) a).buyPrice) {
+    if (!this.buyPrice.equals(((Trade) a).buyPrice)) {
       return false;
     }
 
-    if (this.sellPrice != ((Trade) a).sellPrice) {
+    if (!this.sellPrice.equals(((Trade) a).sellPrice)) {
       return false;
     }
 
     return true;
+  }
 
+  @Override
+  public int hashCode() {
+    int result = 1;
+    final int primeConst = 37;
+
+    result = primeConst * result + buyDay;
+    result = primeConst * result + sellDay;
+    result = primeConst * result + profit;
+    result = primeConst * result + buyPrice;
+    result = primeConst * result + sellPrice;
+
+    return result;
   }
 
   @Override
@@ -79,4 +87,9 @@ public class Trade {
   public Integer getSellDay() {
     return sellDay;
   }
+
+  public Integer getProfit() {
+    return this.profit;
+  }
+
 }

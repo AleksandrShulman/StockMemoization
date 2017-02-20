@@ -101,9 +101,6 @@ public class TestStockApp {
   public void testMaxProfitInRangeEquivalent() {
 
     int[] smallTrades = {35, 5, 10, 25};
-    Trade bestTradeInRangeIncreasing = StockApp.bestTradeInRangeIncreasingMemoized(smallTrades, 0, smallTrades.length - 1);
-    Trade bestTradeInRangeDecreasing = StockApp.bestTradeInRangeDecreasingMemoized(smallTrades, 0, smallTrades.length - 1);
-
     int smallIncreasingProfit =
         StockApp.bestTradeInRangeIncreasingMemoized(smallTrades, 0, smallTrades.length - 1).getProfit();
     int smallDecreasingProfit =
