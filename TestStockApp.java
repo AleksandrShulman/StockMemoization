@@ -6,13 +6,13 @@ import org.junit.Test;
  */
 public class TestStockApp {
 
-  final int[] sample_trades = {5, 10, 15, 35, 5, 10};
+  final int[] sample_trades = {3, 10, 15, 35, 5, 10};
 
   @Test
   public void testFindBestTrade() {
 
     final Integer EXPECTED_LOWEST_PRICE_DAY = 0;
-    final Integer EXPECTED_LOWEST_PRICE = 5;
+    final Integer EXPECTED_LOWEST_PRICE = 3;
     final Integer EXPECTED_HIGHEST_PRICE_DAY = 3;
     final Integer EXPECTED_HIGHEST_PRICE = 35;
     final Integer EXPECTED_PROFIT = EXPECTED_HIGHEST_PRICE - EXPECTED_LOWEST_PRICE;
@@ -25,7 +25,7 @@ public class TestStockApp {
   }
 
   @Test
-  public void validateRangeDecreasingAndRangeIncreasingEqual() {
+  public void testRangeDecreasingAndRangeIncreasingEqual() {
 
     Trade result = StockApp.bestTradeInRangeIncreasingMemoized(sample_trades, 0, sample_trades.length - 1);
     Trade result2 = StockApp.bestTradeInRangeDecreasingMemoized(sample_trades, 0, sample_trades.length - 1);
@@ -77,34 +77,43 @@ public class TestStockApp {
   public void testMaxProfitInRangeDecreasing() {
 
     int[] trades = {5, 10, 15, 35, 5, 10};
-    Assert.assertEquals(30, StockApp.maxProfitInRangeDecreasing(trades, 0, trades.length - 1));
+    Assert.assertEquals((Integer)30,
+        StockApp.bestTradeInRangeDecreasingMemoized(trades, 0, trades.length - 1).getProfit());
 
     trades = new int[]{5, 10};
-    Assert.assertEquals(5, StockApp.maxProfitInRangeDecreasing(trades, 0, trades.length - 1));
+    Assert.assertEquals((Integer)5,
+        StockApp.bestTradeInRangeDecreasingMemoized(trades, 0, trades.length - 1).getProfit());
 
     trades = new int[]{5};
-    Assert.assertEquals(0, StockApp.maxProfitInRangeDecreasing(trades, 0, trades.length - 1));
+    Assert.assertEquals((Integer)0,
+        StockApp.bestTradeInRangeDecreasingMemoized(trades, 0, trades.length - 1).getProfit());
   }
 
   @Test
   public void testEmptyTradesListDecreasing() {
 
     int[] trades = new int[]{};
-    Assert.assertEquals(0, StockApp.maxProfitInRangeDecreasing(trades, 0, Math.max(trades.length - 1, 0)));
+    Assert.assertEquals((Integer)0,
+        StockApp.bestTradeInRangeDecreasingMemoized(trades, 0, Math.max(trades.length - 1, 0)).getProfit());
   }
 
   @Test
   public void testMaxProfitInRangeEquivalent() {
 
     int[] smallTrades = {35, 5, 10, 25};
-    int smallIncreasingProfit = StockApp.maxProfitInRangeIncreasing(smallTrades, 0, smallTrades.length - 1);
-    int smallDecreasingProfit = StockApp.maxProfitInRangeDecreasing(smallTrades, 0, smallTrades.length - 1);
+    Trade bestTradeInRangeIncreasing = StockApp.bestTradeInRangeIncreasingMemoized(smallTrades, 0, smallTrades.length - 1);
+    Trade bestTradeInRangeDecreasing = StockApp.bestTradeInRangeDecreasingMemoized(smallTrades, 0, smallTrades.length - 1);
+
+    int smallIncreasingProfit =
+        StockApp.bestTradeInRangeIncreasingMemoized(smallTrades, 0, smallTrades.length - 1).getProfit();
+    int smallDecreasingProfit =
+        StockApp.bestTradeInRangeDecreasingMemoized(smallTrades, 0, smallTrades.length - 1).getProfit();
 
     Assert.assertEquals(smallIncreasingProfit, smallDecreasingProfit);
 
     int[] trades = {5, 10, 15, 35, 5, 10, 25, 40, 10, 25, 5};
-    int increasingProfit = StockApp.maxProfitInRangeIncreasing(trades, 3, 6);
-    int decreasingProfit = StockApp.maxProfitInRangeDecreasing(trades, 3, 6);
+    int increasingProfit = StockApp.bestTradeInRangeIncreasingMemoized(trades, 3, 6).getProfit();
+    int decreasingProfit = StockApp.bestTradeInRangeDecreasingMemoized(trades, 3, 6).getProfit();
     Assert.assertEquals(increasingProfit, decreasingProfit);
   }
 

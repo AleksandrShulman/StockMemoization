@@ -18,6 +18,11 @@ public class Trade {
   }
 
   public Trade(int buyDay, int sellDay, int buyPrice, int sellPrice) {
+
+    if (buyDay > sellDay) {
+      throw new IllegalArgumentException("It does not make sense to buy after selling!");
+    }
+
     this.buyDay = buyDay;
     this.sellDay = sellDay;
     this.buyPrice = buyPrice;

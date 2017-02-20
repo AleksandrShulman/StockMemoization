@@ -6,7 +6,6 @@ import java.util.List;
  */
 public class StockApp {
 
-
   private static int totalUnitsOfWork = 0;
   public static int getTotalUnitsOfWork() {
     return totalUnitsOfWork;
@@ -213,7 +212,6 @@ public class StockApp {
     Trade optimalFirstTrade;
     Trade optimalSecondTrade;
 
-
     StockApp.totalUnitsOfWork += (endingIndex - startIndex);
 
     for(int rangeBoundary = startIndex; rangeBoundary < (endingIndex + 1); rangeBoundary++) {
@@ -275,7 +273,7 @@ public class StockApp {
     bestTradeMatrix[2][startIndex][endingIndex] = bestTrades;
   }
 
-  // This is O(sample_trades)
+  // This is O(n)
   public static void maxProfitEachDayInRangeIncreasing(int[] trades, int startIndex, int endingIndex, int[] populatedProfilts) {
 
     int lowestPriceSeenSoFar = Integer.MAX_VALUE-1; //initialize to highest possible value
@@ -365,23 +363,9 @@ public class StockApp {
     return bestTrade;
   }
 
-  public static Trade bestTradeInRangeIncreasingMemoized(int[] trades, int startIndex, int endingIndex) {
-    return bestTradeInRangeIncreasingMemoized(trades, startIndex, endingIndex, null);
-  }
-
-  public static Trade bestTradeInRangeDecreasingMemoized(int[] trades, int startIndex, int endingIndex) {
-    return bestTradeInRangeDecreasingMemoized(trades, startIndex, endingIndex, null);
-  }
-
   public static Trade bestTradeInRangeDecreasingMemoized(int[] trades, int startIndex,
-                                                 int endingIndex, TradeList[][][] bestTrades ) {
-
+                                                         int endingIndex, TradeList[][][] bestTrades ) {
     validateInputs(trades, startIndex, endingIndex);
-    int ARRAY_SIZE_TO_ACCOMMODATE = trades.length;
-    int numTransactions = 1;
-    if (bestTrades == null) {
-      bestTrades = new TradeList[numTransactions+1][ARRAY_SIZE_TO_ACCOMMODATE][ARRAY_SIZE_TO_ACCOMMODATE];
-    }
     if (startIndex == endingIndex) {
       return new NilTrade();
     }
@@ -401,10 +385,10 @@ public class StockApp {
     }
 
     // Initializations
-    int lowestPriceSeenSoFar = trades[startIndex]; //initialize to highest possible value
-    int highestPriceSeenSoFar = trades[startIndex]; //initialize to highest possible value
-    int dayOfLowestPrice = startIndex;
-    int dayOfHighestPrice = startIndex;
+    int lowestPriceSeenSoFar = trades[endingIndex]; //initialize to highest possible value
+    int highestPriceSeenSoFar = trades[endingIndex]; //initialize to highest possible value
+    int dayOfLowestPrice = endingIndex;
+    int dayOfHighestPrice = endingIndex;
 
     Trade bestTrade = new Trade(dayOfLowestPrice, dayOfHighestPrice,
         trades[dayOfLowestPrice], trades[dayOfHighestPrice]);
@@ -415,7 +399,7 @@ public class StockApp {
       int currentPrice = trades[startingDay];
       if (highestPriceSeenSoFar - currentPrice > bestTrade.getProfit()) {
 
-        bestTrade = new Trade(dayOfLowestPrice, dayOfHighestPrice, currentPrice, highestPriceSeenSoFar);
+        bestTrade = new Trade(startingDay, dayOfHighestPrice, currentPrice, highestPriceSeenSoFar);
       }
 
       // If today was a low day, we should have that data available
@@ -423,70 +407,17 @@ public class StockApp {
         highestPriceSeenSoFar = trades[startingDay];
         dayOfHighestPrice = startingDay;
       }
-
-      if (trades[startingDay] < lowestPriceSeenSoFar) {
-        lowestPriceSeenSoFar = trades[startingDay];
-        dayOfLowestPrice = startingDay;
-      }
     }
 
     return bestTrade;
   }
 
-  // This is O(n)
-  public static void maxProfitEachDayInRangeDecreasing(int[] trades, int startIndex, int endingIndex, int[] populatedProfits) {
-
-    StockApp.totalUnitsOfWork += (endingIndex - startIndex);
-
-    int highestPriceSeenSoFar = -1; //initialize to highest possible value
-    int maximumProfitPossibleSoFar = 0;
-    for (int startingDay = endingIndex; startingDay>=startIndex; startingDay--) {
-      int result = updateMostMoneyDesc(maximumProfitPossibleSoFar, highestPriceSeenSoFar, trades[startingDay]);
-      if (result > maximumProfitPossibleSoFar) {
-        maximumProfitPossibleSoFar = result;
-      }
-
-      populatedProfits[startingDay] = maximumProfitPossibleSoFar;
-      if (trades[startingDay] > highestPriceSeenSoFar) {
-        highestPriceSeenSoFar = trades[startingDay];
-      }
-    }
+  public static Trade bestTradeInRangeIncreasingMemoized(int[] trades, int startIndex, int endingIndex) {
+    return bestTradeInRangeIncreasingMemoized(trades, startIndex, endingIndex, null);
   }
 
-  // This is O(n). This will discard the values it finds
-  public static int maxProfitInRangeIncreasing(int[] trades, int startIndex, int endingIndex) {
-    return maxProfitInRange(trades, true, startIndex, endingIndex);
-  }
-
-  // This is O(n). This will discard the values it finds
-  public static int maxProfitInRangeDecreasing(int[] trades, int startIndex, int endingIndex) {
-    return maxProfitInRange(trades, false, startIndex, endingIndex);
-  }
-
-  // O(n)
-  private static int maxProfitInRange(int[] trades, boolean increasing, int startIndex, int endingIndex) {
-    validateInputs(trades, startIndex, endingIndex);
-
-    if (trades.length == 0 || startIndex == endingIndex) {
-      return 0;
-    }
-
-    int maxSeen = -1;
-    int[] output = new int[trades.length];
-
-    // These are O(n)
-    if (increasing) {
-      maxProfitEachDayInRangeIncreasing(trades, startIndex, endingIndex, output);
-    } else {
-      maxProfitEachDayInRangeDecreasing(trades, startIndex, endingIndex, output);
-    }
-
-    // This is O(n)
-    for (int max : output) {
-      maxSeen = Math.max(max, maxSeen);
-    }
-
-    return maxSeen;
+  public static Trade bestTradeInRangeDecreasingMemoized(int[] trades, int startIndex, int endingIndex) {
+    return bestTradeInRangeDecreasingMemoized(trades, startIndex, endingIndex, null);
   }
 
   // The kernel of process. We have the 3 pieces of state we need. This is O(1)
