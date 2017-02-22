@@ -12,17 +12,17 @@ public class TestTrades {
   public void testSingleTrade() {
 
     int[] trades = new int[]{4,5,6,19};
-    Trade resultingTrade = StockApp.bestTradeInRangeDecreasingMemoized(trades, 0, trades.length - 1);
+    Trade resultingTrade = StockCalculation.bestTradeInRangeDecreasingMemoized(trades, 0, trades.length - 1);
     Assert.assertTrue(! (resultingTrade instanceof NilTrade));
     Assert.assertEquals((Integer)15, resultingTrade.getProfit());
     System.out.println(resultingTrade);
 
-    resultingTrade = StockApp.bestTradeInRangeIncreasingMemoized(trades, 0, trades.length - 1);
+    resultingTrade = StockCalculation.bestTradeInRangeIncreasingMemoized(trades, 0, trades.length - 1);
     Assert.assertTrue(! (resultingTrade instanceof NilTrade));
     Assert.assertEquals((Integer)15, resultingTrade.getProfit());
     System.out.println(resultingTrade);
 
-    List<Trade> optimalTrades = StockApp.optimalTradesRecursively(trades, 0,
+    List<Trade> optimalTrades = StockCalculation.optimalTradesRecursively(trades, 0,
         trades.length - 1, 1, null).getTradeList();
     Assert.assertEquals(1, optimalTrades.size());
     Assert.assertEquals(optimalTrades.get(0), resultingTrade);
@@ -69,7 +69,7 @@ public class TestTrades {
 
     int[] stockPrices = new int[]{4,9,5,18,3,7,23,45,21,19,29,1,34,28,19,28,6,19,12,4,22};
     System.out.println("There are " + stockPrices.length + " items");
-    List<Trade> optimalTrades = StockApp.optimalTradesRecursively(stockPrices, 0,
+    List<Trade> optimalTrades = StockCalculation.optimalTradesRecursively(stockPrices, 0,
         stockPrices.length - 1, 2, null).getTradeList();
     int totalProfit = 0;
     for (Trade t : optimalTrades) {
@@ -85,10 +85,10 @@ public class TestTrades {
 
     int[] trades = new int[]{4,5,6,19};
 
-    Trade resultingTrade = StockApp.bestTradeInRangeDecreasingMemoized(trades, 2,2, null);
+    Trade resultingTrade = StockCalculation.bestTradeInRangeDecreasingMemoized(trades, 2, 2, null);
     Assert.assertTrue(resultingTrade instanceof NilTrade);
 
-    resultingTrade = StockApp.bestTradeInRangeIncreasingMemoized(trades, 2, 2, null);
+    resultingTrade = StockCalculation.bestTradeInRangeIncreasingMemoized(trades, 2, 2, null);
     Assert.assertTrue(resultingTrade instanceof NilTrade);
   }
 
@@ -129,7 +129,7 @@ public class TestTrades {
   }
 
   private void runRecursiveTestCase(int[] trades, int numTrades, Integer expectedTotalProfit) {
-    List<Trade> optimalTrades = StockApp.optimalTradesRecursively(trades, 0,
+    List<Trade> optimalTrades = StockCalculation.optimalTradesRecursively(trades, 0,
         trades.length - 1, numTrades, null).getTradeList();
     int totalProfit = 0;
     for (Trade t : optimalTrades) {
