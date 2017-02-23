@@ -57,7 +57,6 @@ public class StockCalculation {
     this.numTransactions = numTransactions;
 
     final int ARRAY_SIZE = closingPrices.length;
-
     this.bestTradeMatrix = new TradeList[numTransactions+1][ARRAY_SIZE][ARRAY_SIZE];
   }
 
@@ -94,8 +93,7 @@ public class StockCalculation {
     final int ARRAY_SIZE = closingPrices.length;
     TradeList bestTrades = new TradeList();
 
-    // Memoization
-    // NOTE -- the index of numTransactions isn't 0-indexed
+    // Memoization - NOTE -- the index of numTransactions isn't 0-indexed
     if (bestTradeMatrix == null) {
       bestTradeMatrix = new TradeList[numTransactions+1][ARRAY_SIZE][ARRAY_SIZE];
     } else if (bestTradeMatrix[numTransactions] != null) {
@@ -119,7 +117,8 @@ public class StockCalculation {
        *
        * Performance: O(n)
        */
-      bestTrades.add(bestTradeInRangeIncreasingMemoized(startIndex, endingIndex));
+      Trade increasingTrade = bestTradeInRangeIncreasingMemoized(startIndex, endingIndex);
+      bestTrades.add(increasingTrade);
 
     } else if (numTransactions == 2) {
       /*
@@ -267,6 +266,8 @@ public class StockCalculation {
    * @param endingIndex analysing the closingPrices, ending at this day (inclusive)
    * @return the best single trade possible
    */
+
+  //TODO: Create a version of this that works for n transactions, instead of just one
   public Trade bestTradeInRangeIncreasingMemoized(int startIndex, int endingIndex) {
     validateInputs(closingPrices, startIndex, endingIndex);
     int ARRAY_SIZE_TO_ACCOMMODATE = closingPrices.length;
@@ -299,10 +300,7 @@ public class StockCalculation {
     for (int day = startIndex; day <= (endingIndex); day++) {
       int currentPrice = closingPrices[day];
       if (currentPrice - lowestPriceSeenSoFar > bestTrade.getProfit()) {
-
         bestTrade = new Trade(dayOfLowestPrice, day, lowestPriceSeenSoFar, currentPrice);
-        // MEMOIZATION
-        System.out.println("About to memoize " + startIndex + ", " + day);
       }
 
       TradeList wrapper = new TradeList();
@@ -328,6 +326,8 @@ public class StockCalculation {
       return new NilTrade();
     }
 
+    // Note: If running both the increasing and decreasing calculation, the result
+    // should be the same. However, if it's already set, it'll just return it.
     if (bestTradeMatrix != null && bestTradeMatrix[1][startIndex][endingIndex] != null) {
       totalUnitsOfWork += 1;
       System.out.println("Hit for 1 trade from " + startIndex + "," + endingIndex + "!");
@@ -361,7 +361,7 @@ public class StockCalculation {
 
       TradeList wrapper = new TradeList();
       wrapper.add(bestTrade);
-      bestTradeMatrix[1][startIndex][endingIndex] = wrapper;
+      bestTradeMatrix[1][startingDay][endingIndex] = wrapper;
       // If today was a low day, we should have that data available
       if (closingPrices[startingDay] > highestPriceSeenSoFar) {
         highestPriceSeenSoFar = closingPrices[startingDay];
@@ -407,7 +407,6 @@ public class StockCalculation {
    */
   private int getOptimalIndexForBoundary(List<Trade> l1, List<TradeList> l2) {
 
-    //TODO: Open question - should we be populating these into the bestmatrix data structure as we go along?
     if (l1.size() != l2.size()) {
       throw new IllegalArgumentException("lists vary in size!");
     }
