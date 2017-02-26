@@ -449,4 +449,39 @@ public class StockCalculation {
 
     return bestI;
   }
+
+  public TradeList bestTwoTradesIncreasing(TradeList currentBestTwoTrades, int nextValue,
+                                           int minimumValueSeen, int maximumValueSeen) {
+
+    //TODO: Find out what things we need to have.
+
+    // Let's say I have the minimum value seen.
+    // Let's say I have the maximum value seen. Can I do anything with these two?
+
+    // Let's define the best two trades (t1: t1_buy, t1_sell, t2_buy, t2_sell).
+
+    // Examples where the best two trades would change:
+    // [10, 20, 9, 18]
+    // t1_buy = 10, t1_sell = 20, t2_buy = 9, t2_sell = 18
+
+    // What if the next value is 6 (no change)
+    // What if the value after that is 60 (then we'd have to reverse the trade that was least profitable
+
+    // A thought: You could proceed as if the max profit seen so far is the profit from the minimum trade.
+    // That way, the next trade opportunity would present itself. This folds nicely into the existing logic.
+
+    // What about edge cases, such as:
+    // [10, 20, 9, 18, 19]
+    // And how would the response be different from:
+    // [9, 18, 10, 20, 19]
+    // In the first case, the 19 would replace the 18. In the second case, we couldn't do that b/c we'd
+    // need to override the previous trade.
+
+    // So, we'd need to drag around a ton of state, but if evaluating that state is O(1), then it'll work!
+
+
+    return null;
+
+  }
+
 }
