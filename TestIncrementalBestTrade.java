@@ -13,6 +13,9 @@ public class TestIncrementalBestTrade {
 
 
   @Test
+  // TODO: Connect how this helps us to the larger problem. The problem is that there are O(n^2) start/finish
+  // combinations and, even if we were able to calculate in O(1) time the new value from the old, it'd
+  // still be O(n^2).
   public void testIncrementalTrades() {
 
     int[] originalTrades = new int[]{1,7,2,7};

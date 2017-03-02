@@ -24,6 +24,15 @@ public class StockCalculation {
       tradeList.add(t);
     }
 
+    TradeList(TradeList tl) {
+
+      this.tradeList = new ArrayList<>(tl.getTradeList().size());
+      for(Trade t : tl.getTradeList()) {
+
+        tradeList.add(t);
+      }
+    }
+
     public void add(Trade t) {
       this.tradeList.add(t);
     }
@@ -40,6 +49,10 @@ public class StockCalculation {
 
     public Trade get(int i) {
       return this.tradeList.get(i);
+    }
+
+    public void remove(Trade t) {
+      this.tradeList.remove(t);
     }
 
     public int getTotalProfit() {
@@ -139,7 +152,7 @@ public class StockCalculation {
        *
        * Performance: O(n)
        */
-      findBestTwoTrades(startIndex, endingIndex, closingPrices, bestTradeMatrix, bestTrades);
+      findBestTwoTrades(startIndex, endingIndex, bestTrades);
 
     } else {
       /*
@@ -196,11 +209,10 @@ public class StockCalculation {
     return bestTrades;
   }
 
-
   //TODO: Refactor to remove stockPrices, since this is a member variable.
   // It's private anyway, so it's not really built to be tested.
-  private void findBestTwoTrades(int startIndex, int endingIndex, int[] stockPrices,
-                                 TradeList[][][] bestTradeMatrix, TradeList bestTrades) {
+  private void findBestTwoTrades(int startIndex, int endingIndex,
+                                 TradeList bestTrades) {
 
     List<Trade> bestFirstTradeGivenBoundary = new ArrayList<>();
     List<Trade> bestSecondTradeGivenBoundary = new ArrayList<>();
@@ -229,18 +241,18 @@ public class StockCalculation {
       }
 
       //// 2nd trade
-      if (bestTradeMatrix[1][rangeBoundary][stockPrices.length - 1] != null) {
-        System.out.println("Hit for 1 trade from " + rangeBoundary + "," + (stockPrices.length - 1) + "!");
-        optimalSecondTrade = bestTradeMatrix[1][rangeBoundary][stockPrices.length - 1].get(0);
+      if (bestTradeMatrix[1][rangeBoundary][closingPrices.length - 1] != null) {
+        System.out.println("Hit for 1 trade from " + rangeBoundary + "," + (closingPrices.length - 1) + "!");
+        optimalSecondTrade = bestTradeMatrix[1][rangeBoundary][closingPrices.length - 1].get(0);
 
       } else {
-        System.out.println("[Miss] for 1 trade from " + rangeBoundary + "," + (stockPrices.length - 1) + "!");
-        optimalSecondTrade = findOptimalTrades(rangeBoundary, stockPrices.length - 1, 1).get(0);
+        System.out.println("[Miss] for 1 trade from " + rangeBoundary + "," + (closingPrices.length - 1) + "!");
+        optimalSecondTrade = findOptimalTrades(rangeBoundary, closingPrices.length - 1, 1).get(0);
 
         // Memoize it
         TradeList memoizedTradeList = new TradeList();
         memoizedTradeList.add(optimalSecondTrade);
-        bestTradeMatrix[1][rangeBoundary][stockPrices.length - 1] = memoizedTradeList;
+        bestTradeMatrix[1][rangeBoundary][closingPrices.length - 1] = memoizedTradeList;
       }
 
       // TODO: Add memoization?
@@ -469,10 +481,12 @@ public class StockCalculation {
    * chronolically latest trade - in that case, we could just sell for the newer price.
    * What if we include that data point as the lowest price seen when we initialize?
    *
+   * Problem: There are still O(n^2) spots for all this.
+   *
    */
   // O(n)
 
-  public void populateBestTwoTradesList(int[] closingPrices) {
+  public void populateBestTwoTradesList() {
 
     int ARRAY_SIZE_TO_ACCOMMODATE = closingPrices.length;
     int numTransactions = 2;
@@ -493,17 +507,46 @@ public class StockCalculation {
       }
     }
 
-
-
     TradeList bestTwoTrades = new TradeList();
-    findBestTwoTrades(0, 3, closingPrices, bestTradeMatrix, bestTwoTrades);
+    findBestTwoTrades(0, 3, bestTwoTrades);
+
+    Trade lessProfitableTrade = getLessProfitableTrade(bestTwoTrades.getTradeList());
 
     // Perform an O(1) calculation, n times
+    int minSeen = -1;
+    int dayOfLowestPrice = 3;
+    int dayOfHighestPrice = 3;
+    int maxProfitFromOneMoreTrade = 0;
+    Trade bestTrade = null;
     for(int i=3; i<closingPrices.length; i++) {
 
+      // TODO: Deal w/the possibility of the case where we have another value that will
+      // invalidate the last trade
 
+      if(closingPrices[i] - minSeen > maxProfitFromOneMoreTrade) {
+        dayOfHighestPrice = i;
+        maxProfitFromOneMoreTrade = (closingPrices[i] - minSeen);
+        bestTrade = new Trade(dayOfLowestPrice, dayOfHighestPrice,
+            closingPrices[dayOfLowestPrice], closingPrices[dayOfHighestPrice]);
+      }
 
+      if(closingPrices[i] < minSeen) {
+        minSeen = closingPrices[i];
+      }
+
+      // One more step here. Now we need to see what happens if this trade
+      // is better than either of the existing trades
+
+      if (bestTrade.getProfit() > lessProfitableTrade.getProfit()) {
+        bestTwoTrades.remove(lessProfitableTrade);
+        bestTwoTrades.add(bestTrade);
+        lessProfitableTrade = getLessProfitableTrade(bestTwoTrades.getTradeList());
+      }
+
+      //At each juncture just remember which two trades were best
+      bestTradeMatrix[2][0][i] = new TradeList(bestTwoTrades);
     }
+
 
   }
 
