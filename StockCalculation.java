@@ -19,6 +19,11 @@ public class StockCalculation {
       this.tradeList = new ArrayList<>();
     }
 
+    TradeList(Trade t) {
+      this.tradeList = new ArrayList<>();
+      tradeList.add(t);
+    }
+
     public void add(Trade t) {
       this.tradeList.add(t);
     }
@@ -192,8 +197,10 @@ public class StockCalculation {
   }
 
 
+  //TODO: Refactor to remove stockPrices, since this is a member variable.
+  // It's private anyway, so it's not really built to be tested.
   private void findBestTwoTrades(int startIndex, int endingIndex, int[] stockPrices,
-                                        TradeList[][][] bestTradeMatrix, TradeList bestTrades) {
+                                 TradeList[][][] bestTradeMatrix, TradeList bestTrades) {
 
     List<Trade> bestFirstTradeGivenBoundary = new ArrayList<>();
     List<Trade> bestSecondTradeGivenBoundary = new ArrayList<>();
@@ -450,8 +457,63 @@ public class StockCalculation {
     return bestI;
   }
 
+  /**
+   * Strategy:
+   * For each value to be seen, keep computing the best trade that could be generated.
+   * If that trade is better than the less profitable trade, then replace that trade
+   * with this one and make the other trade the less profitable one.
+   *
+   * Second to that:
+   *
+   * As an edge case, we could get a single value that is higher than the sell price of the
+   * chronolically latest trade - in that case, we could just sell for the newer price.
+   * What if we include that data point as the lowest price seen when we initialize?
+   *
+   */
+  // O(n)
+
+  public void populateBestTwoTradesList(int[] closingPrices) {
+
+    int ARRAY_SIZE_TO_ACCOMMODATE = closingPrices.length;
+    int numTransactions = 2;
+
+    if (bestTradeMatrix == null) {
+      bestTradeMatrix = new TradeList[numTransactions+1][ARRAY_SIZE_TO_ACCOMMODATE][ARRAY_SIZE_TO_ACCOMMODATE];
+    }
+
+    //In O(n) time, we can initialize this array of two trades
+    // TODO: Figure out what to do between 0 - 3. That part of the memoization Matrix will be empty otherwise.
+    final TradeList nilTwoTradeList = new TradeList();
+    nilTwoTradeList.add(new NilTrade());
+    nilTwoTradeList.add(new NilTrade());
+
+    for(int i = 0; i < closingPrices.length; i++) {
+      if (bestTradeMatrix[2][i][i] != null) {
+        bestTradeMatrix[2][i][i] = nilTwoTradeList;
+      }
+    }
+
+
+
+    TradeList bestTwoTrades = new TradeList();
+    findBestTwoTrades(0, 3, closingPrices, bestTradeMatrix, bestTwoTrades);
+
+    // Perform an O(1) calculation, n times
+    for(int i=3; i<closingPrices.length; i++) {
+
+
+
+    }
+
+  }
+
+
+
+
   public TradeList bestTwoTradesIncreasing(TradeList currentBestTwoTrades, int nextValue,
                                            int minimumValueSeen, int maximumValueSeen) {
+
+    Trade lessProfitableTrade = getLessProfitableTrade(currentBestTwoTrades.getTradeList());
 
     //TODO: Find out what things we need to have.
 
@@ -471,17 +533,41 @@ public class StockCalculation {
     // That way, the next trade opportunity would present itself. This folds nicely into the existing logic.
 
     // What about edge cases, such as:
-    // [10, 20, 9, 18, 19]
+    // a. [10, 20, 9, 18, 19]
     // And how would the response be different from:
-    // [9, 18, 10, 20, 19]
+    // b. [9, 18, 10, 20, 19]
     // In the first case, the 19 would replace the 18. In the second case, we couldn't do that b/c we'd
     // need to override the previous trade.
 
     // So, we'd need to drag around a ton of state, but if evaluating that state is O(1), then it'll work!
 
+    // To get the right answer for a:
+    // You'd need:
+    // 1. Profit of smaller trade:
+    // 2. Profit of larger trade (eventually, as it becomes the smaller one)
+    // 3. Smallest value seen going forward
+    // 4. Current value
+    // Strategy: You'd calculate profit, check that profit against the smaller trade, and then adjust accordingly.
 
+    // To get the right answer for b:
+    //
+    // Trade t = bestTradeInRangeIncreasingMemoized()
     return null;
 
+  }
+
+  // O(trades)
+  private Trade getLessProfitableTrade(List<Trade> trades) {
+
+    Trade returnTrade = trades.get(0);
+    for (Trade t : trades) {
+      if (t.getProfit() > returnTrade.getProfit()) {
+
+        returnTrade = t;
+      }
+    }
+
+    return returnTrade;
   }
 
 }
